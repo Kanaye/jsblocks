@@ -12,9 +12,10 @@ define([
   './createFragment',
   './dom',
   './Expression',
-  './ElementsData'
+  './ElementsData',
+  './var/generateStyleObject'
 ], function (blocks, hasOwn, keys, virtualElementIdentity, classAttr, dataIdAttr, dataQueryAttr, getClassIndex, setClass, escapeValue, createFragment, dom,
-             Expression, ElementsData) {
+             Expression, ElementsData, generateStyleObject) {
 
   function VirtualElement(tagName) {
     if (!VirtualElement.prototype.isPrototypeOf(this)) {
@@ -326,6 +327,7 @@ define([
       if (this._haveAttributes) {
         html += this._renderAttributes();
       }
+
       if (this._haveStyle) {
         html += generateStyleAttribute(this._style, this._state);
       }
@@ -622,21 +624,37 @@ define([
       var attributeExpressions = this._attributeExpressions;
       var dataId = this._attributes[dataIdAttr];
       var each = this._each;
+      var attributes = this._attributes;
       var expression;
 
-      blocks.each(this._attributes, function (attributeValue, attributeName) {
+      blocks.each(attributes, function (attributeValue, attributeName) {
         if(!attributeValue) {
           // In Serverside rendering, some attributes will be set to null in some cases
           return;
         }
-
-        if (!each && serverData && serverData[dataId + attributeName]) {
-          expression = Expression.Create(serverData[dataId + attributeName], attributeName);
+        if (attributeName == 'style') {
+          // the only way to make sure expressions in style are processed as they are not in the style-object nor in the style.cssText
+          blocks.each(generateStyleObject(attributeValue),
+            function (styleValue, styleName) {
+              if(!each && serverData && serverData[dataId + 'style:' + styleName]) {
+                expression = Expression.Create(serverData[dataId + 'style:' + styleName], styleName, null, Expression.attributeType.STYLE);
+              } else {
+                expression = Expression.Create(styleValue, styleName, null, Expression.attributeType.STYLE);
+              }
+              if (expression) {
+                attributeExpressions.push(expression);
+              }
+          });
+          attributes.style = null; // remove so that 'style' does not get rendered two times
         } else {
-          expression = Expression.Create(attributeValue, attributeName);
-        }
-        if (expression) {
-          attributeExpressions.push(expression);
+          if (!each && serverData && serverData[dataId + attributeName]) {
+            expression = Expression.Create(serverData[dataId + attributeName], attributeName);
+          } else {
+            expression = Expression.Create(attributeValue, attributeName);
+          }
+          if (expression) {
+            attributeExpressions.push(expression);
+          }
         }
       });
     },
@@ -647,6 +665,7 @@ define([
       var elementData = ElementsData.byId(attributes ? attributes[dataIdAttr] : this._attributes[dataIdAttr]);
       var expressions = this._attributeExpressions;
       var attributeName;
+      var attributeType;
       var expression;
       var value;
 
@@ -654,20 +673,35 @@ define([
         expression = expressions[i];
         value = Expression.GetValue(context, elementData, expression);
         attributeName = expression.attributeName;
+        attributeType = expression.attributeType;
+
         if ((attributes && attributes[attributeName] !== value) || !attributes) {
           if (isVirtual) {
-            if (this._state) {
-              this._state.attributes[attributeName] = value;
+            if (attributeType == Expression.attributeType.GENERAL) {
+              if (this._state) {
+                this._state.attributes[attributeName] = value;
+              } else {
+                this._attributes[attributeName] = value;
+              }
             } else {
-              this._attributes[attributeName] = value;
+              if (this._state) {
+                this._state.style[attributeName] = value;
+              } else {
+                this._style[attributeName] = value;
+              }
             }
           } else {
-            dom.attr(this._el, attributeName, value);
+            if(attributeType == Expression.attributeType.GENERAL) {
+              dom.attr(this._el, attributeName, value);
+            } else {
+              dom.css(this._el, attributeName, value);
+            }
           }
         }
       }
     }
   });
+  
 
   VirtualElement.Is = function (value) {
     return value && value.__identity__ == virtualElementIdentity;

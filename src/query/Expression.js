@@ -8,8 +8,15 @@ define([
   var Expression = {
     Html: 0,
     ValueOnly: 2,
+
+    //attribute type for special attributes curently style
+    attributeType: {
+      NONE: 0, // no attribute (= text)
+      GENERAL: 2, // (currently) all other non style attributes
+      STYLE: 4 // For custom handling in style attribute
+    },
     
-    Create: function (text, attributeName, element) {
+    Create: function (text, attributeName, element, attributeType) {
       var index = -1;
       var endIndex = 0;
       var result = [];
@@ -59,6 +66,7 @@ define([
       result.attributeName = attributeName;
       result.element = element;
       result.isExpression = true;
+      result.attributeType = attributeType || (attributeName ? Expression.attributeType.GENERAL : Expression.attributeType.NONE);
       return match ? result : null;
     },
 

@@ -87,9 +87,11 @@ define([
     }
 
     if (elementData) {
-      if (expressionData.attributeName) {
+      if (entireExpression.attributeType ==  Expression.attributeType.STYLE) {
+        server.data[elementData.id + 'style:' + expressionData.attributeName] = entireExpression.text;
+      } else if (entireExpression.attributeType == Expression.attributeType.GENERAL) {
         server.data[elementData.id + expressionData.attributeName] =  entireExpression.text;
-      } else {
+      } else { // can only be text expression (= attributeType.NONE)
         server.data[elementData.id] = '{{' + expressionData.expression + '}}';
       }
     }

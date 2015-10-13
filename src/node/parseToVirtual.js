@@ -1,6 +1,7 @@
 define([
-  '../query/VirtualElement'
-], function (VirtualElement) {
+  '../query/VirtualElement',
+  '../query/var/generateStyleObject'
+], function (VirtualElement, generateStyleObject) {
   var parse5 = require('parse5');
 
   var selfClosingTags = {
@@ -53,8 +54,9 @@ define([
         if (attrs.style) {
           element._style = generateStyleObject(attrs.style);
           element._haveStyle = true;
-          attrs.style = null;
         }
+
+        element._createAttributeExpressions();
 
         if (parent) {
           parent._children.push(element);
@@ -107,28 +109,6 @@ define([
     parser.parse(html);
 
     return root.children();
-  }
-
-  // TODO: Refactor this because it is duplicate from query/createVirtual.js file
-  function generateStyleObject(styleString) {
-    var styles = styleString.split(';');
-    var styleObject = {};
-    var index;
-    var style;
-    var values;
-
-    for (var i = 0; i < styles.length; i++) {
-      style = styles[i];
-      if (style) {
-        index = style.indexOf(':');
-        if (index != -1) {
-          values = [style.substring(0, index), style.substring(index + 1)];
-          styleObject[values[0].toLowerCase().replace(trimRegExp, '')] = values[1].replace(trimRegExp, '');
-        }
-      }
-    }
-
-    return styleObject;
   }
 
   return parseToVirtual;

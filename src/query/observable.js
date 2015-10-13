@@ -192,11 +192,16 @@ define([
 
             if (element) {
               if (expression.attr) {
-                if(isProperty) {
-                  element[propertyName] = Expression.GetValue(context, null, expression.entire);
+                if (expression.entire.attributeType == Expression.attributeType.STYLE) {
+                  dom.css(element, expression.attr, Expression.GetValue(context, null, expression.entire));
                 } else {
-                  element.setAttribute(expression.attr, Expression.GetValue(context, null, expression.entire));
+                  if (isProperty) {
+                    element[propertyName] = Expression.GetValue(context, null, expression.entire);
+                  } else {
+                    element.setAttribute(expression.attr, Expression.GetValue(context, null, expression.entire));
+                  }
                 }
+               
               } else {
                 if (element.nextSibling) {
                   element = element.nextSibling;
@@ -206,10 +211,14 @@ define([
                 }
               }
             } else {
-             element = elementData.virtual;
-             if (expression.attr) {
-               element.attr(expression.attr, Expression.GetValue(context, null, expression.entire));
-             }
+              element = elementData.virtual;
+              if (expression.attr) {
+                if (expression.attributeType == Expression.attributeType.attribute) {
+                  element.attr(expression.attr, Expression.GetValue(context, null, expression.entire));
+                } else {
+                  element.css(expression.attr, Expression.GetValue(context, null, expression.entire));
+                }
+              }
             }
           });
 

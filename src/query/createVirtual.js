@@ -5,8 +5,9 @@ define([
   './browser',
   './Expression',
   './VirtualElement',
-  './VirtualComment'
-], function (trimRegExp, dataQueryAttr, escapeValue, browser, Expression, VirtualElement, VirtualComment) {
+  './VirtualComment',
+  './var/generateStyleObject'
+], function (trimRegExp, dataQueryAttr, escapeValue, browser, Expression, VirtualElement, VirtualComment, generateStyleObject) {
   function createVirtual(htmlElement, parentElement) {
     var serverData = window.__blocksServerData__;
     var elements = [];
@@ -31,16 +32,20 @@ define([
         if (parentElement) {
           element._each = parentElement._each || parentElement._childrenEach;
         }
+
+        if (htmlElement.style.cssText) {
+          element._haveStyle = true;
+          element._style = generateStyleObject(htmlElement.style.cssText);
+        }
+
         element._haveAttributes = false;
         htmlAttributes = htmlElement.attributes;
         elementAttributes = {};
         for (var i = 0; i < htmlAttributes.length; i++) {
           htmlAttribute = htmlAttributes[i];
-          // the style should not be part of the attributes. The style is handled individually.
-          if (htmlAttribute.nodeName !== 'style' &&
-            (htmlAttribute.specified ||
+          if (htmlAttribute.specified ||
               //IE7 wil return false for .specified for the "value" attribute - WTF!
-            (browser.IE < 8 && htmlAttribute.nodeName == 'value' && htmlAttribute.nodeValue))) {
+            (browser.IE < 8 && htmlAttribute.nodeName == 'value' && htmlAttribute.nodeValue)) {
             elementAttributes[htmlAttribute.nodeName.toLowerCase()] = browser.IE < 11 ? htmlAttribute.nodeValue : htmlAttribute.value;
             element._haveAttributes = true;
           }
@@ -48,10 +53,6 @@ define([
         element._attributes = elementAttributes;
         element._createAttributeExpressions(serverData);
 
-        if (htmlElement.style.cssText) {
-          element._haveStyle = true;
-          element._style = generateStyleObject(htmlElement.style.cssText);
-        }
 
         setIsSelfClosing(element);
         if (tagName == 'script' || tagName == 'style' || tagName == 'code' || element.hasClass('bl-skip')) {
@@ -100,27 +101,6 @@ define([
       htmlElement = htmlElement.nextSibling;
     }
     return elements;
-  }
-
-  function generateStyleObject(styleString) {
-    var styles = styleString.split(';');
-    var styleObject = {};
-    var index;
-    var style;
-    var values;
-
-    for (var i = 0; i < styles.length; i++) {
-      style = styles[i];
-      if (style) {
-        index = style.indexOf(':');
-        if (index != -1) {
-          values = [style.substring(0, index), style.substring(index + 1)];
-          styleObject[values[0].toLowerCase().replace(trimRegExp, '')] = values[1].replace(trimRegExp, '');
-        }
-      }
-    }
-
-    return styleObject;
   }
 
   var isSelfClosingCache = {};
