@@ -398,6 +398,55 @@
         expect($('#testElement')).toHaveAttr('data-value', '&lt;input />&amp;nbsp;');
       });
     });
+
+    describe('styles', function() {
+
+      it('replaces style values initialy', function () {
+        setAttr('style', 'height: {{height}}; width:{{width}}px');
+
+        query({
+          height: '10px',
+          width: 50
+        });
+
+        expect($('#testElement')).toHaveCss({
+          height: '10px',
+          width: '50px'
+        });
+      });
+
+      it('does not touch non expression styles', function () {
+        setAttr('style', 'height: 10px; width: {{width}}');
+
+        query({
+          width: '20px'
+        });
+
+        expect($('#testElement')).toHaveCss({
+          height: '10px',
+          width: '20px'
+        });
+      });
+
+      it('updates styles', function() {
+        setAttr('style', 'height: {{height}}px');
+        var height = blocks.observable(33);
+        query({
+          height: height
+        });
+
+        expect($('#testElement')).toHaveCss({
+          height: '33px'
+        });
+
+        height(90);
+
+        expect($('#testElement')).toHaveCss({
+          height: '90px'
+        });
+      });
+
+    });
   });
 
 })();

@@ -31,7 +31,14 @@ define([
 
       Safari: window && window.navigator && parseVersion(window.navigator.userAgent.match(/^(?:(?!chrome).)*version\/([^ ]*) safari/i)),
 
-      Firefox: window && window.navigator && parseVersion(window.navigator.userAgent.match(/Firefox\/([^ ]*)/))
+      Firefox: window && window.navigator && parseVersion(window.navigator.userAgent.match(/Firefox\/([^ ]*)/)),
+
+      //(some) IE, Edge, .NET_embeded browser will remove style they not know from DOM, but not parse the conditional blocks from above...
+      IEish: (function () {
+        var el = document.createElement('div');
+        el.setAttribute('style','invalid-something: someting');
+        return el.attributes.style.nodeValue == 'invalid-something: someting' ? undefined : true;
+      })()
     });
   }
 
