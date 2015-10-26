@@ -655,14 +655,13 @@ define([
         value = Expression.GetValue(context, elementData, expression);
         attributeName = expression.attributeName;
         if ((attributes && attributes[attributeName] !== value) || !attributes) {
-          if (isVirtual) {
-            if (this._state) {
-              this._state.attributes[attributeName] = value;
-            } else {
-              this._attributes[attributeName] = value;
-            }
+          if (isVirtual && !this._state) {
+            this._attributes[attributeName] = value;
           } else {
             dom.attr(this._el, attributeName, value);
+          }
+          if (this._state) {
+            this._state.attributes[attributeName] = value;
           }
         }
       }
